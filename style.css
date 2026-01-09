@@ -85,20 +85,20 @@ body {
 .app-container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 1rem;
 }
 
 header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 3rem;
-    padding: 1.5rem 2rem;
+    margin-bottom: 1rem;
+    padding: 1rem 1.5rem;
     background: var(--glass-bg);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
-    border-radius: 1.5rem;
+    border-radius: 1rem;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
@@ -109,21 +109,21 @@ header {
 }
 
 .logo-icon {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     background: linear-gradient(135deg, #38bdf8, #818cf8);
-    border-radius: 10px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 1.2rem;
+    font-size: 1rem;
     color: white;
     box-shadow: 0 0 15px var(--accent-glow);
 }
 
 h1 {
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     font-weight: 600;
     letter-spacing: -0.02em;
 }
@@ -143,7 +143,7 @@ h1 {
 
 /* Search Section */
 .search-section {
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
     position: relative;
     z-index: 100;
 }
@@ -152,7 +152,7 @@ h1 {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 0.8rem 1.5rem;
+    padding: 0.6rem 1.2rem;
     position: relative;
 }
 
@@ -234,7 +234,7 @@ h1 {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .glass {
@@ -242,8 +242,8 @@ h1 {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
-    border-radius: 1.5rem;
-    padding: 1.5rem;
+    border-radius: 1rem;
+    padding: 1.2rem;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, border-color 0.3s ease;
 }
@@ -263,10 +263,11 @@ h1 {
 }
 
 .value-display {
-    font-size: 2.5rem;
+    font-size: 2rem;
     font-weight: 700;
     background: linear-gradient(to right, #fff, #94a3b8);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 0.5rem;
 }
@@ -295,8 +296,8 @@ h1 {
 /* Stock Grid */
 .stocks-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.2rem;
 }
 
 .stock-card {
@@ -352,8 +353,8 @@ h1 {
 }
 
 .stock-logo {
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     object-fit: contain;
     background: #fff;
@@ -363,7 +364,7 @@ h1 {
 }
 
 .stock-info h4 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 0.1rem;
     /* Reduced margin */
@@ -398,15 +399,15 @@ h1 {
 }
 
 .current-price {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 600;
     display: block;
 }
 
 .stock-holdings {
     background: rgba(0, 0, 0, 0.2);
-    border-radius: 1rem;
-    padding: 1rem;
+    border-radius: 0.8rem;
+    padding: 0.8rem;
     display: flex;
     justify-content: space-between;
     margin-top: auto;
