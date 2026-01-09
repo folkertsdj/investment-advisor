@@ -157,7 +157,7 @@ function renderStocks(stocks, container) {
                     </div>
                 </div>
                 <div class="stock-price">
-                    <span class="current-price">${formatCurrency(stock.price)}</span>
+                    <span class="current-price">${formatCurrency(stock.price)} <span class="currency-sub">${formatEuro(stock.price)}</span></span>
                 </div>
             </div>
             <div class="stock-holdings">
@@ -174,7 +174,7 @@ function renderStocks(stocks, container) {
                 </div>
                 <div class="holding-item" style="text-align: right;">
                     <span class="label">Total Value</span>
-                    <span class="value total-row-value" style="color: var(--accent-color);">${formatCurrency(totalValue)}</span>
+                    <span class="value total-row-value" style="color: var(--accent-color);">${formatCurrency(totalValue)} <span class="currency-sub">${formatEuro(totalValue)}</span></span>
                 </div>
             </div>
         `;
@@ -209,7 +209,7 @@ async function updateStockQuantity(symbol, newQuantity, price) {
     // Optimistic UI update
     const card = document.getElementById(`stock-card-${symbol}`);
     const rowTotalEl = card.querySelector('.total-row-value');
-    rowTotalEl.textContent = formatCurrency(qty * price);
+    rowTotalEl.innerHTML = `${formatCurrency(qty * price)} <span class="currency-sub">${formatEuro(qty * price)}</span>`;
 
     // Update Global Summary locally first for snappiness
     recalculateSummaryFromDOM();
@@ -251,7 +251,7 @@ function recalculateSummaryFromDOM() {
         }
     });
 
-    document.getElementById('total-value').textContent = formatCurrency(totalValue);
+    document.getElementById('total-value').innerHTML = `${formatCurrency(totalValue)} <span class="currency-sub">${formatEuro(totalValue)}</span>`;
 }
 
 function updateSummary(stocks, valueEl, holdingsEl) {
@@ -264,7 +264,7 @@ function updateSummary(stocks, valueEl, holdingsEl) {
     });
 
     // Animate value
-    valueEl.textContent = formatCurrency(totalValue);
+    valueEl.innerHTML = `${formatCurrency(totalValue)} <span class="currency-sub">${formatEuro(totalValue)}</span>`;
     holdingsEl.textContent = totalCount;
 }
 
@@ -273,4 +273,12 @@ function formatCurrency(value) {
         style: 'currency',
         currency: 'USD'
     }).format(value);
+}
+
+function formatEuro(usdValue) {
+    const rate = 0.93; // Fixed conversion rate for prototype
+    return new Intl.NumberFormat('en-DE', {
+        style: 'currency',
+        currency: 'EUR'
+    }).format(usdValue * rate);
 }

@@ -428,6 +428,13 @@ h1 {
     font-weight: 500;
 }
 
+.currency-sub {
+    font-size: 0.75em;
+    color: var(--text-secondary);
+    margin-left: 0.3rem;
+    font-weight: 400;
+}
+
 .loading-state {
     grid-column: 1 / -1;
     display: flex;
