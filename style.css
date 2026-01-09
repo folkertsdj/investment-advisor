@@ -293,11 +293,16 @@ h1 {
     font-weight: 400;
 }
 
+.holdings-layout {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
 .sector-list {
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
-    margin-top: 0.5rem;
 }
 
 .sector-tag {
