@@ -3,7 +3,7 @@ RKLB,Rocket Lab Corp,24.83
 STRL,Sterling Infrastructure Inc,4.4
 KTOS,Kratos Defense and Security Solutions Inc,4.82
 FIX,Comfort Systems USA Inc,0.51
-STN.TO,Stantec Inc,4.06
+STN,Stantec Inc,4.06
 CDNS,Cadence Design Systems Inc,1.18
 U,Unity Software Inc,2.61
 MANH,MANHATTAN ASSOCIATES INC,0.33
