@@ -52,11 +52,20 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 print("Fetching live prices from Finnhub...")
                 for stock in stocks:
                     try:
-                        url = f"https://finnhub.io/api/v1/quote?symbol={stock['symbol']}&token={api_token}"
-                        with urllib.request.urlopen(url) as response:
+                        # Fetch Quote
+                        quote_url = f"https://finnhub.io/api/v1/quote?symbol={stock['symbol']}&token={api_token}"
+                        with urllib.request.urlopen(quote_url) as response:
                             data = json.loads(response.read().decode())
                             if 'c' in data and data['c'] != 0:
                                 stock['price'] = float(data['c'])
+                        
+                        # Fetch Profile (Logo and Sector)
+                        profile_url = f"https://finnhub.io/api/v1/stock/profile2?symbol={stock['symbol']}&token={api_token}"
+                        with urllib.request.urlopen(profile_url) as response:
+                            p_data = json.loads(response.read().decode())
+                            stock['logo'] = p_data.get('logo', '')
+                            stock['industry'] = p_data.get('finnhubIndustry', 'N/A')
+                            
                     except urllib.error.URLError as e:
                          print(f"Network error fetching {stock['symbol']}: {e}")
                     except Exception as e:

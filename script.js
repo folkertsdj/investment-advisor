@@ -146,7 +146,7 @@ function renderStocks(stocks, container) {
             <div class="stock-header">
                 <div class="stock-info-wrapper">
                     <img 
-                        src="https://assets.parqet.com/logos/symbol/${stock.symbol}?format=png" 
+                        src="${stock.logo || `https://assets.parqet.com/logos/symbol/${stock.symbol}?format=png`}" 
                         alt="${stock.symbol}" 
                         class="stock-logo"
                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${stock.symbol}&background=random&color=fff&size=128';"
@@ -154,6 +154,7 @@ function renderStocks(stocks, container) {
                     <div class="stock-info">
                         <h4>${stock.symbol}</h4>
                         <span class="stock-name">${stock.name}</span>
+                        <div class="stock-industry" style="font-size: 0.7rem; color: var(--text-secondary); opacity: 0.8; margin-top: 2px;">${stock.industry || ''}</div>
                     </div>
                 </div>
                 <div class="stock-price">
@@ -266,6 +267,9 @@ function updateSummary(stocks, valueEl, holdingsEl) {
     // Animate value
     valueEl.innerHTML = `${formatCurrency(totalValue)} <span class="currency-sub">${formatEuro(totalValue)}</span>`;
     holdingsEl.textContent = totalCount;
+
+    // Update Sectors
+    updateSectors(stocks);
 }
 
 function formatCurrency(value) {
@@ -273,6 +277,24 @@ function formatCurrency(value) {
         style: 'currency',
         currency: 'USD'
     }).format(value);
+}
+
+function updateSectors(stocks) {
+    const sectorEl = document.getElementById('sector-aggregation');
+    if (!sectorEl) return;
+
+    const sectors = {};
+    stocks.forEach(stock => {
+        const s = stock.industry || 'Other';
+        sectors[s] = (sectors[s] || 0) + 1;
+    });
+
+    // Sort sectors by count
+    const sortedSectors = Object.entries(sectors).sort((a, b) => b[1] - a[1]);
+
+    sectorEl.innerHTML = sortedSectors.map(([name, count]) => `
+        <span class="sector-tag">${name} (${count})</span>
+    `).join('');
 }
 
 function formatEuro(usdValue) {
