@@ -58,6 +58,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                             data = json.loads(response.read().decode())
                             if 'c' in data and data['c'] != 0:
                                 stock['price'] = float(data['c'])
+                                stock['change'] = float(data.get('dp', 0))
                         
                         # Fetch Profile (Logo and Sector)
                         profile_url = f"https://finnhub.io/api/v1/stock/profile2?symbol={stock['symbol']}&token={api_token}"

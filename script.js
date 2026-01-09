@@ -159,6 +159,9 @@ function renderStocks(stocks, container) {
                 </div>
                 <div class="stock-price">
                     <span class="current-price">${formatCurrency(stock.price)} <span class="currency-sub">${formatEuro(stock.price)}</span></span>
+                    <div class="trend ${stock.change >= 0 ? 'positive' : 'negative'}" style="font-size: 0.75rem; justify-content: flex-end; margin-top: 2px;">
+                        ${stock.change >= 0 ? '▲' : '▼'} ${Math.abs(stock.change).toFixed(2)}%
+                    </div>
                 </div>
             </div>
             <div class="stock-holdings">
