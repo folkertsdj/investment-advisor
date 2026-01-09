@@ -61,7 +61,7 @@ function renderSearchResults(results, container) {
         item.className = 'result-item';
         item.innerHTML = `
             <img 
-                src="https://eodhd.com/img/logos/US/${stock.symbol}.png" 
+                src="https://assets.parqet.com/logos/symbol/${stock.symbol}?format=png" 
                 class="stock-logo" 
                 style="width: 32px; height: 32px;"
                 onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${stock.symbol}&background=random&color=fff&size=64';"
@@ -146,7 +146,7 @@ function renderStocks(stocks, container) {
             <div class="stock-header">
                 <div class="stock-info-wrapper">
                     <img 
-                        src="https://eodhd.com/img/logos/US/${stock.symbol}.png" 
+                        src="https://assets.parqet.com/logos/symbol/${stock.symbol}?format=png" 
                         alt="${stock.symbol}" 
                         class="stock-logo"
                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=${stock.symbol}&background=random&color=fff&size=128';"
@@ -168,6 +168,7 @@ function renderStocks(stocks, container) {
                         class="quantity-input" 
                         value="${stock.quantity}" 
                         min="0"
+                        step="0.000001"
                         onchange="updateStockQuantity('${stock.symbol}', this.value, ${stock.price})"
                     >
                 </div>
@@ -202,7 +203,7 @@ async function deleteStock(symbol) {
 }
 
 async function updateStockQuantity(symbol, newQuantity, price) {
-    const qty = parseInt(newQuantity);
+    const qty = parseFloat(newQuantity);
     if (isNaN(qty) || qty < 0) return;
 
     // Optimistic UI update

@@ -38,7 +38,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                             stocks.append({
                                 'symbol': parts[0],
                                 'name': parts[1],
-                                'quantity': int(parts[2]),
+                                'quantity': float(parts[2]),
                                 'price': 0.0 # Price not stored in file anymore
                             })
             except Exception as e:
