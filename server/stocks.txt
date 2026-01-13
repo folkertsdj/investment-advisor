@@ -5,8 +5,8 @@ KTOS,Kratos Defense and Security Solutions Inc,4.82
 FIX,Comfort Systems USA Inc,0.51
 STN,Stantec Inc,4.06
 CDNS,Cadence Design Systems Inc,1.18
-U,Unity Software Inc,2.61
-MANH,MANHATTAN ASSOCIATES INC,0.33
-IBM,INTL BUSINESS MACHINES CORP,0.19
+U,Unity Software Inc,13.14
+MANH,MANHATTAN ASSOCIATES INC,3.16
+IBM,INTL BUSINESS MACHINES CORP,1.79
 TTD,Trade Desk Inc,1.55
 CLBT,Cellebrite DI Ltd,3.15

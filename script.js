@@ -1,8 +1,10 @@
 const API_URL = 'http://localhost:8000/api/stocks';
 const API_UPDATE_URL = 'http://localhost:8000/api/update-stock';
 const API_SEARCH_URL = 'http://localhost:8000/api/search';
+let USD_TO_EUR_RATE = 0.93; // Default rate while fetching dynamic value
 
 document.addEventListener('DOMContentLoaded', () => {
+    fetchExchangeRate();
     fetchStocks();
     setupSearch();
 });
@@ -300,10 +302,28 @@ function updateSectors(stocks) {
     `).join('');
 }
 
+async function fetchExchangeRate() {
+    try {
+        const response = await fetch('https://api.frankfurter.app/latest?from=USD&to=EUR');
+        const data = await response.json();
+        if (data.rates && data.rates.EUR) {
+            USD_TO_EUR_RATE = data.rates.EUR;
+            console.log(`Updated exchange rate: 1 USD = ${USD_TO_EUR_RATE} EUR`);
+
+            // If stocks are already loaded, refresh the summary to reflect the new rate
+            const totalValueEl = document.getElementById('total-value');
+            if (totalValueEl && totalValueEl.textContent !== '$0.00') {
+                recalculateSummaryFromDOM();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to fetch exchange rate:', error);
+    }
+}
+
 function formatEuro(usdValue) {
-    const rate = 0.93; // Fixed conversion rate for prototype
     return new Intl.NumberFormat('en-DE', {
         style: 'currency',
         currency: 'EUR'
-    }).format(usdValue * rate);
+    }).format(usdValue * USD_TO_EUR_RATE);
 }
