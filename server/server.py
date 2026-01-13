@@ -46,31 +46,35 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
 
             # Fetch live prices if token exists
             if api_token and api_token != "YOUR_FINNHUB_TOKEN_HERE":
-                import urllib.request
-                import urllib.error
-                
-                print("Fetching live prices from Finnhub...")
-                for stock in stocks:
+                import asyncio
+                import aiohttp
+
+                async def get_stock_data(session, stock):
                     try:
-                        # Fetch Quote
+                        # Fetch Quote and Profile in parallel for each stock too!
                         quote_url = f"https://finnhub.io/api/v1/quote?symbol={stock['symbol']}&token={api_token}"
-                        with urllib.request.urlopen(quote_url) as response:
-                            data = json.loads(response.read().decode())
-                            if 'c' in data and data['c'] != 0:
-                                stock['price'] = float(data['c'])
-                                stock['change'] = float(data.get('dp', 0))
-                        
-                        # Fetch Profile (Logo and Sector)
                         profile_url = f"https://finnhub.io/api/v1/stock/profile2?symbol={stock['symbol']}&token={api_token}"
-                        with urllib.request.urlopen(profile_url) as response:
-                            p_data = json.loads(response.read().decode())
+                        
+                        async with session.get(quote_url) as q_resp:
+                            q_data = await q_resp.json()
+                            if 'c' in q_data and q_data['c'] != 0:
+                                stock['price'] = float(q_data['c'])
+                                stock['change'] = float(q_data.get('dp', 0))
+                        
+                        async with session.get(profile_url) as p_resp:
+                            p_data = await p_resp.json()
                             stock['logo'] = p_data.get('logo', '')
                             stock['industry'] = p_data.get('finnhubIndustry', 'N/A')
-                            
-                    except urllib.error.URLError as e:
-                         print(f"Network error fetching {stock['symbol']}: {e}")
                     except Exception as e:
                         print(f"Error fetching {stock['symbol']}: {e}")
+
+                async def fetch_all():
+                    async with aiohttp.ClientSession() as session:
+                        tasks = [get_stock_data(session, s) for s in stocks]
+                        await asyncio.gather(*tasks)
+
+                print("Fetching live prices in parallel from Finnhub...")
+                asyncio.run(fetch_all())
             else:
                 print("Skipping live data: No valid API token in config.json")
             
