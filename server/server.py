@@ -2,6 +2,8 @@ import http.server
 import socketserver
 import json
 import os
+import yfinance as yf
+from concurrent.futures import ThreadPoolExecutor
 
 PORT = 8000
 
@@ -77,6 +79,23 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 asyncio.run(fetch_all())
             else:
                 print("Skipping live data: No valid API token in config.json")
+            
+            # Fetch analyst targets from yfinance in parallel
+            print("Fetching analyst targets from yfinance...")
+            def fetch_yf_data(stock):
+                try:
+                    ticker = yf.Ticker(stock['symbol'])
+                    info = ticker.info
+                    stock['targetMedianPrice'] = info.get('targetMedianPrice')
+                    # Fallback to mean if median is missing
+                    if stock['targetMedianPrice'] is None:
+                        stock['targetMedianPrice'] = info.get('targetMeanPrice')
+                except Exception as e:
+                    print(f"Error fetching yfinance data for {stock['symbol']}: {e}")
+                    stock['targetMedianPrice'] = None
+
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                executor.map(fetch_yf_data, stocks)
             
             self.wfile.write(json.dumps(stocks).encode())
 

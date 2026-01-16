@@ -164,6 +164,15 @@ function renderStocks(stocks, container) {
                     <div class="trend ${stock.change >= 0 ? 'positive' : 'negative'}" style="font-size: 0.75rem; justify-content: flex-end; margin-top: 2px;">
                         ${stock.change >= 0 ? '▲' : '▼'} ${Math.abs(stock.change).toFixed(2)}%
                     </div>
+                    ${stock.targetMedianPrice ? `
+                        <div class="target-price" style="font-size: 0.7rem; color: var(--text-secondary); text-align: right; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 4px;">
+                            <div style="opacity: 0.8; margin-bottom: 1px;">Target</div>
+                            <span style="color: var(--text-primary); font-weight: 600;">${formatCurrency(stock.targetMedianPrice)}</span>
+                            <div style="font-size: 0.65rem; color: ${stock.targetMedianPrice > stock.price ? 'var(--success)' : 'var(--danger)'}; font-weight: 500; margin-top: 1px;">
+                                ${stock.targetMedianPrice > stock.price ? '+' : ''}${(((stock.targetMedianPrice / stock.price) - 1) * 100).toFixed(1)}% Upside
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
             <div class="stock-holdings">
