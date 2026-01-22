@@ -4,12 +4,36 @@ import json
 import os
 import yfinance as yf
 from concurrent.futures import ThreadPoolExecutor
+import time
+import sqlite3
 
 PORT = 8000
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'portfolio.db')
+CACHE_TTL_SECONDS = 300  # 5 minutes
+stock_cache = {
+    "data": None,
+    "timestamp": 0
+}
+
+def invalidate_cache():
+    print("Cache invalidated due to portfolio change.")
+    stock_cache["timestamp"] = 0
+    stock_cache["data"] = None
 
 class MyHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/api/stocks':
+            # Check cache first
+            if time.time() - stock_cache["timestamp"] < CACHE_TTL_SECONDS and stock_cache["data"] is not None:
+                print("Returning cached stock data.")
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps(stock_cache["data"]).encode())
+                return
+
+            print("Fetching fresh stock data.")
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*') # Allow CORS for development
@@ -18,42 +42,31 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             stocks = []
             api_token = None
             
-            # Load API Token
-            try:
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                config_path = os.path.join(script_dir, 'config.json')
-                with open(config_path, 'r') as cf:
-                    config = json.load(cf)
-                    api_token = config.get('finnhub_api_token')
-            except Exception as e:
-                print(f"Error reading config.json: {e}")
+            api_token = os.environ.get('FINNHUB_API_TOKEN')
 
-            # Read stocks from file
             try:
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                file_path = os.path.join(script_dir, 'stocks.txt')
+                conn = sqlite3.connect(DB_PATH)
+                cursor = conn.cursor()
+                cursor.execute("SELECT symbol, name, quantity FROM stocks")
+                rows = cursor.fetchall()
+                conn.close()
                 
-                with open(file_path, 'r') as f:
-                    for line in f:
-                        parts = line.strip().split(',')
-                        if len(parts) >= 3:
-                            stocks.append({
-                                'symbol': parts[0],
-                                'name': parts[1],
-                                'quantity': float(parts[2]),
-                                'price': 0.0 # Price not stored in file anymore
-                            })
+                for row in rows:
+                    stocks.append({
+                        'symbol': row[0],
+                        'name': row[1],
+                        'quantity': row[2],
+                        'price': 0.0
+                    })
             except Exception as e:
-                print(f"Error reading stocks.txt: {e}")
+                print(f"Error reading from database: {e}")
 
-            # Fetch live prices if token exists
             if api_token and api_token != "YOUR_FINNHUB_TOKEN_HERE":
                 import asyncio
                 import aiohttp
 
                 async def get_stock_data(session, stock):
                     try:
-                        # Fetch Quote and Profile in parallel for each stock too!
                         quote_url = f"https://finnhub.io/api/v1/quote?symbol={stock['symbol']}&token={api_token}"
                         profile_url = f"https://finnhub.io/api/v1/stock/profile2?symbol={stock['symbol']}&token={api_token}"
                         
@@ -80,14 +93,12 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             else:
                 print("Skipping live data: No valid API token in config.json")
             
-            # Fetch analyst targets from yfinance in parallel
             print("Fetching analyst targets from yfinance...")
             def fetch_yf_data(stock):
                 try:
                     ticker = yf.Ticker(stock['symbol'])
                     info = ticker.info
                     stock['targetMedianPrice'] = info.get('targetMedianPrice')
-                    # Fallback to mean if median is missing
                     if stock['targetMedianPrice'] is None:
                         stock['targetMedianPrice'] = info.get('targetMeanPrice')
                 except Exception as e:
@@ -97,6 +108,9 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             with ThreadPoolExecutor(max_workers=10) as executor:
                 executor.map(fetch_yf_data, stocks)
             
+            stock_cache["data"] = stocks
+            stock_cache["timestamp"] = time.time()
+
             self.wfile.write(json.dumps(stocks).encode())
 
         elif self.path.startswith('/api/search'):
@@ -104,20 +118,9 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             import urllib.request
             import urllib.error
             
-            # Load API Token (Duplicate logic for safety)
-            api_token = None
-            try:
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                config_path = os.path.join(script_dir, 'config.json')
-                with open(config_path, 'r') as cf:
-                    config = json.load(cf)
-                    api_token = config.get('finnhub_api_token')
-            except Exception:
-                pass
-
+            api_token = os.environ.get('FINNHUB_API_TOKEN')
             query_components = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             query = query_components.get('q', [''])[0]
-            
             result = {"count": 0, "result": []}
             
             if api_token and query:
@@ -135,13 +138,13 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(json.dumps(result).encode())
 
         else:
-            # Serve index.html for root path
             if self.path == '/':
                 self.path = '/index.html'
             return http.server.SimpleHTTPRequestHandler.do_GET(self)
 
     def do_POST(self):
         if self.path == '/api/update-stock':
+            invalidate_cache()
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             
@@ -151,30 +154,12 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 new_quantity = data.get('quantity')
                 
                 if symbol_to_update is not None and new_quantity is not None:
-                    # Update file
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    file_path = os.path.join(script_dir, 'stocks.txt')
+                    conn = sqlite3.connect(DB_PATH)
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE stocks SET quantity = ? WHERE symbol = ?", (new_quantity, symbol_to_update))
+                    conn.commit()
                     
-                    updated_lines = []
-                    found = False
-                    
-                    if os.path.exists(file_path):
-                        with open(file_path, 'r') as f:
-                            lines = f.readlines()
-                            for line in lines:
-                                parts = line.strip().split(',')
-                                if len(parts) >= 3 and parts[0] == symbol_to_update:
-                                    # Update quantity (index 2)
-                                    parts[2] = str(new_quantity)
-                                    updated_lines.append(','.join(parts) + '\n')
-                                    found = True
-                                else:
-                                    updated_lines.append(line)
-                    
-                    if found:
-                        with open(file_path, 'w') as f:
-                            f.writelines(updated_lines)
-                            
+                    if cursor.rowcount > 0:
                         self.send_response(200)
                         self.send_header('Content-type', 'application/json')
                         self.send_header('Access-Control-Allow-Origin', '*')
@@ -182,6 +167,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                         self.wfile.write(json.dumps({'status': 'success', 'message': 'Stock updated'}).encode())
                     else:
                         self.send_error(404, "Stock not found")
+                    conn.close()
                 else:
                     self.send_error(400, "Invalid data")
             except Exception as e:
@@ -189,6 +175,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(500, str(e))
 
         elif self.path == '/api/add-stock':
+            invalidate_cache()
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             
@@ -198,23 +185,12 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 name = data.get('name')
                 
                 if symbol and name:
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    file_path = os.path.join(script_dir, 'stocks.txt')
+                    conn = sqlite3.connect(DB_PATH)
+                    cursor = conn.cursor()
+                    cursor.execute("INSERT OR IGNORE INTO stocks (symbol, name, quantity) VALUES (?, ?, 0)", (symbol, name))
+                    conn.commit()
+                    conn.close()
                     
-                    exists = False
-                    if os.path.exists(file_path):
-                        with open(file_path, 'r') as f:
-                            for line in f:
-                                parts = line.strip().split(',')
-                                if len(parts) > 0 and parts[0] == symbol:
-                                    exists = True
-                                    break
-                    
-                    if not exists:
-                        with open(file_path, 'a') as f:
-                            # Append new stock with 0 quantity
-                            f.write(f"{symbol},{name},0\n")
-                            
                     self.send_response(200)
                     self.send_header('Content-type', 'application/json')
                     self.send_header('Access-Control-Allow-Origin', '*')
@@ -227,6 +203,7 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(500, str(e))
 
         elif self.path == '/api/delete-stock':
+            invalidate_cache()
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             
@@ -235,40 +212,25 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 symbol = data.get('symbol')
                 
                 if symbol:
-                    script_dir = os.path.dirname(os.path.abspath(__file__))
-                    file_path = os.path.join(script_dir, 'stocks.txt')
+                    conn = sqlite3.connect(DB_PATH)
+                    cursor = conn.cursor()
+                    cursor.execute("DELETE FROM stocks WHERE symbol = ?", (symbol,))
+                    conn.commit()
                     
-                    if os.path.exists(file_path):
-                        lines_to_keep = []
-                        found = False
-                        with open(file_path, 'r') as f:
-                            lines = f.readlines()
-                            for line in lines:
-                                parts = line.strip().split(',')
-                                if len(parts) > 0 and parts[0] == symbol:
-                                    found = True
-                                    continue # Skip this line
-                                lines_to_keep.append(line)
-                        
-                        if found:
-                            with open(file_path, 'w') as f:
-                                f.writelines(lines_to_keep)
-                                
-                            self.send_response(200)
-                            self.send_header('Content-type', 'application/json')
-                            self.send_header('Access-Control-Allow-Origin', '*')
-                            self.end_headers()
-                            self.wfile.write(json.dumps({'status': 'success', 'message': 'Stock deleted'}).encode())
-                        else:
-                            self.send_error(404, "Stock not found")
+                    if cursor.rowcount > 0:
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/json')
+                        self.send_header('Access-Control-Allow-Origin', '*')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({'status': 'success', 'message': 'Stock deleted'}).encode())
                     else:
-                        self.send_error(404, "File not found")
+                        self.send_error(404, "Stock not found")
+                    conn.close()
                 else:
                     self.send_error(400, "Missing symbol")
             except Exception as e:
                 print(f"Error deleting stock: {e}")
                 self.send_error(500, str(e))
-
         else:
             self.send_error(404, "Not Found")
 
