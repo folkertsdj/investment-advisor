@@ -205,3 +205,4 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+\n# Ignore sensitive configuration files\nserver/config.json\n\n# Ignore database files\nserver/portfolio.db\n\n# Ignore log files\nserver.log
